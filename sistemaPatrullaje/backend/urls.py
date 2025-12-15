@@ -24,6 +24,7 @@ from api.views import (
     RegistroUsuarioView,
     LoginDNIView,
     RegistrarPatrullaView,
+    SupervisorDashboardView
 )
 
 urlpatterns = [
@@ -37,6 +38,7 @@ urlpatterns = [
     path("roles/", RolListView.as_view()),
     path("usuarios/", UsuarioListView.as_view()),
     path("personal/", PersonalExternoListView.as_view()),
+    path("supervisor/dashboard/", SupervisorDashboardView.as_view()),
 
     # SISTEMA DE PATRULLA
     path("patrulla/registrar/", RegistrarPatrullaView.as_view()),

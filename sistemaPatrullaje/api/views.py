@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 #from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from datetime import date, timedelta, datetime
@@ -17,6 +17,7 @@ from .serializers import (
     RegistroUsuarioSerializer,
     LoginSerializer,
     RegistroPatrullaCreateSerializer,
+    DashboardRegistroSerializer
 )
 from .utils import calcular_distancia, obtener_usuario_desde_token
 #from .permissions import EsOperativo   # puedes usar EsSupervisor en otros endpoints
@@ -158,3 +159,49 @@ class RegistrarPatrullaView(APIView):
             "distancia": distancia,
             "estado": estado
         }, status=201)
+    
+
+class SupervisorDashboardView(APIView):
+
+    def get(self, request):
+
+        # AUTENTICACIÓN MANUAL
+        auth = request.headers.get("Authorization")
+        if not auth or not auth.startswith("Bearer "):
+            raise AuthenticationFailed("Token requerido")
+
+        try:
+            token = auth.split(" ")[1]
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        except:
+            raise AuthenticationFailed("Token inválido")
+
+        # SOLO SUPERVISOR
+        if payload.get("rol") != "supervisor":
+            raise PermissionDenied("Acceso solo para supervisor")
+
+        hoy = date.today()
+
+        registros = RegistroPatrulla.objects.filter(
+            fecha_hora_registro__date=hoy
+        ).select_related(
+            "patrulla__usuario__personal_externo",
+            "puesto"
+        )
+
+        serializer = DashboardRegistroSerializer(registros, many=True)
+
+        # RESUMEN
+        total = registros.count()
+        validos = registros.filter(estado_validacion="VALIDO").count()
+        rechazados = registros.filter(estado_validacion="RECHAZADO").count()
+
+        return Response({
+            "fecha": hoy,
+            "resumen": {
+                "total_registros": total,
+                "validos": validos,
+                "rechazados": rechazados
+            },
+            "registros": serializer.data
+        })

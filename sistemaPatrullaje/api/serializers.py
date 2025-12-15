@@ -1,6 +1,5 @@
-# api/serializers.py
 from rest_framework import serializers
-from .models import PersonalExterno, Rol, Usuario
+from .models import PersonalExterno, Rol, Usuario, RegistroPatrulla
 
 class RolSerializer(serializers.ModelSerializer):
     class Meta:
@@ -65,3 +64,34 @@ class RegistroPatrullaCreateSerializer(serializers.Serializer):
     longitud = serializers.FloatField()
     cargo_operacional = serializers.CharField()
     novedad = serializers.CharField(allow_blank=True)
+
+
+class DashboardRegistroSerializer(serializers.ModelSerializer):
+    apellido = serializers.CharField(
+        source="patrulla.usuario.personal_externo.apellido"
+    )
+    nombre = serializers.CharField(
+        source="patrulla.usuario.personal_externo.nombre"
+    )
+    grado = serializers.CharField(
+        source="patrulla.usuario.personal_externo.grado"
+    )
+    puesto = serializers.CharField(
+        source="puesto.nombre"
+    )
+
+    class Meta:
+        model = RegistroPatrulla
+        fields = [
+            "apellido",
+            "nombre",
+            "grado",
+            "puesto",
+            "cargo_operacional",
+            "fecha_hora_registro",
+            "latitud_escaneo",
+            "longitud_escaneo",
+            "distancia_validada",
+            "estado_validacion",
+        ]
+
