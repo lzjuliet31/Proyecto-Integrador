@@ -6,7 +6,7 @@ class EsOperativo(BasePermission):
         return bool(
             request.user
             and getattr(request.user, "rol", None)
-            and request.user.rol.nombre.lower() == "operativo"
+            and request.user.rol.nombre.lower() == "operador"
         )
 
 class EsSupervisor(BasePermission):

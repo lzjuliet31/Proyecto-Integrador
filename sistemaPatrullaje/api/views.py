@@ -8,6 +8,7 @@ from django.conf import settings
 from datetime import date, timedelta, datetime
 import jwt
 
+
 from .models import Rol, Usuario, PersonalExterno, Puesto, Patrulla, RegistroPatrulla
 from .serializers import (
     RolSerializer,
@@ -97,6 +98,7 @@ class LoginDNIView(APIView):
 # --- REGISTRAR PATRULLA -------------------------------------------------
 
 class RegistrarPatrullaView(APIView):
+    
     def post(self, request):
 
         auth_header = request.headers.get("Authorization")
@@ -107,15 +109,20 @@ class RegistrarPatrullaView(APIView):
         try:
             token = auth_header.split(" ")[1]
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-            usuario = Usuario.objects.get(id=payload["usuario_id"])
+            usuario = Usuario.objects.get(id=payload["usuario_id"], activo=True)
         except:
             raise AuthenticationFailed("Token inválido")
+        
+         #PERMISO POR ROL
+        if usuario.rol.nombre.lower() != "operador":
+            return Response(
+                {"error": "No tiene permisos para registrar patrulla"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         serializer = RegistroPatrullaCreateSerializer(data=request.data)
-
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
-
         data = serializer.validated_data
 
         puesto = Puesto.objects.get(id=data["id_puesto"])
